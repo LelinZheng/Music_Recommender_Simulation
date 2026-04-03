@@ -55,6 +55,16 @@ PROFILES = {
         target_tempo_bpm=110,
         likes_acoustic=False,
     ),
+
+    # Upbeat daytime pop
+    "pop/happy": UserProfile(
+        favorite_genre="pop",
+        favorite_mood="happy",
+        target_energy=0.80,
+        target_valence=0.85,
+        target_tempo_bpm=120,
+        likes_acoustic=False,
+    ),
 }
 
 
@@ -63,7 +73,7 @@ def main() -> None:
     print(f"Loaded songs: {len(songs)}")
 
     # Swap the key below to try a different profile
-    active_profile = PROFILES["night_study"]
+    active_profile = PROFILES["pop/happy"]
 
     user_prefs = {
         "genre":     active_profile.favorite_genre,
@@ -75,14 +85,19 @@ def main() -> None:
 
     recommendations = recommend_songs(user_prefs, songs, k=5)
 
-    print("\nTop recommendations:\n")
-    for rec in recommendations:
-        # You decide the structure of each returned item.
-        # A common pattern is: (song, score, explanation)
-        song, score, explanation = rec
-        print(f"{song['title']} - Score: {score:.2f}")
-        print(f"Because: {explanation}")
+    print(f"\n{'='*52}")
+    print(f"  Top {len(recommendations)} Recommendations for: {active_profile.favorite_mood.title()} {active_profile.favorite_genre.title()}")
+    print(f"{'='*52}\n")
+
+    for rank, (song, score, explanation) in enumerate(recommendations, start=1):
+        bar = "█" * int(score * 20)
+        print(f"  #{rank}  {song['title']} — {song['artist']}")
+        print(f"       Score : {score:.2f}  {bar}")
+        print(f"       Genre : {song['genre']}  |  Mood: {song['mood']}")
+        print(f"       Why   : {explanation}")
         print()
+
+    print(f"{'='*52}\n")
 
 
 if __name__ == "__main__":
