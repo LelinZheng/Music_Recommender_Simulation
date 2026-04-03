@@ -100,34 +100,40 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     reasons = []
     score = 0.0
 
-    # --- Mood (weight 0.35) ---
+    # --- Mood (weight 0.30) ---
+    # Equalized with genre so neither categorically dominates the other.
     pair = frozenset({user_prefs["mood"], song["mood"]})
     if user_prefs["mood"] == song["mood"]:
-        mood_score = 0.35
-        reasons.append(f"mood match: {song['mood']} (+0.35)")
+        mood_score = 0.30
+        reasons.append(f"mood match: {song['mood']} (+0.30)")
     elif pair in MOOD_AFFINITY:
-        mood_score = 0.175
-        reasons.append(f"related mood: {song['mood']} (+0.18)")
+        mood_score = 0.15
+        reasons.append(f"related mood: {song['mood']} (+0.15)")
     else:
         mood_score = 0.0
+        reasons.append(f"! mood '{user_prefs['mood']}' unrecognized or no match")
     score += mood_score
 
-    # --- Genre (weight 0.25) ---
+    # --- Genre (weight 0.30) ---
+    # Equalized with mood so a genre match can't silently bury numeric mismatches.
     pair = frozenset({user_prefs["genre"], song["genre"]})
     if user_prefs["genre"] == song["genre"]:
-        genre_score = 0.25
-        reasons.append(f"genre match: {song['genre']} (+0.25)")
+        genre_score = 0.30
+        reasons.append(f"genre match: {song['genre']} (+0.30)")
     elif pair in GENRE_AFFINITY:
-        genre_score = 0.125
-        reasons.append(f"related genre: {song['genre']} (+0.13)")
+        genre_score = 0.15
+        reasons.append(f"related genre: {song['genre']} (+0.15)")
     else:
         genre_score = 0.0
+        reasons.append(f"! genre '{user_prefs['genre']}' unrecognized or no match")
     score += genre_score
 
     # --- Energy (weight 0.20) ---
-    energy_score = (1 - abs(song["energy"] - user_prefs["energy"])) * 0.20
+    energy_diff = abs(song["energy"] - user_prefs["energy"])
+    energy_score = (1 - energy_diff) * 0.20
     score += energy_score
-    reasons.append(f"energy {song['energy']:.2f} (+{energy_score:.2f})")
+    energy_label = f" ! large mismatch" if energy_diff > 0.4 else ""
+    reasons.append(f"energy {song['energy']:.2f} (+{energy_score:.2f}){energy_label}")
 
     # --- Valence (weight 0.15) ---
     valence_score = (1 - abs(song["valence"] - user_prefs["valence"])) * 0.15
