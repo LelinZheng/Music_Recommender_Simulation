@@ -48,17 +48,90 @@ Each `UserProfile` object stores the user's preferences across the same dimensio
 | `valence` | float | Target emotional positivity, 0.0–1.0 |
 | `tempo_bpm` | int | Preferred tempo in BPM |
 
-### Scoring Logic
+### Algorithm Recipe
 
-Each song receives a weighted similarity score (0.0–1.0):
+The recommender runs four steps:
 
-- **Mood** (weight 0.35) — 1.0 for exact match, 0.5 for related moods, 0.0 otherwise
-- **Genre** (weight 0.25) — 1.0 for exact match, 0.0 otherwise
-- **Energy** (weight 0.20) — `1 - abs(song.energy - user.energy)`
-- **Valence** (weight 0.15) — `1 - abs(song.valence - user.valence)`
-- **Tempo** (weight 0.05) — `1 - abs(song.tempo_bpm - user.tempo_bpm) / 100`
+**Step 1 — Load.** Parse `data/songs.csv` into a list of song dicts, casting numeric fields to `float`/`int`.
 
-Songs are ranked by total score descending and the top-k are returned.
+**Step 2 — Score every song.** For each song, compute a weighted similarity score against the user profile:
+
+```
+total_score = (0.35 × mood_score)
+            + (0.25 × genre_score)
+            + (0.20 × energy_score)
+            + (0.15 × valence_score)
+            + (0.05 × tempo_score)
+```
+
+Categorical features use partial-credit affinity maps so sonically adjacent labels aren't penalized as harshly as completely unrelated ones:
+
+| Feature | Exact match | Related match | No match |
+|---|---|---|---|
+| Mood | 1.0 | 0.5 | 0.0 |
+| Genre | 1.0 | 0.5 | 0.0 |
+
+Related mood pairs: `(chill, relaxed)`, `(chill, focused)`, `(focused, relaxed)`, `(happy, relaxed)`, `(intense, moody)`, `(moody, chill)`, `(intense, euphoric)`, `(euphoric, happy)`
+
+Related genre pairs: `(lofi, ambient)`, `(lofi, jazz)`, `(pop, indie pop)`, `(pop, edm)`, `(rock, metal)`, `(synthwave, edm)`
+
+Numeric features use proximity scoring — closer to the user's target = higher score:
+
+```
+energy_score  = 1 - abs(song.energy    - user.target_energy)
+valence_score = 1 - abs(song.valence   - user.target_valence)
+tempo_score   = 1 - abs(song.tempo_bpm - user.target_tempo_bpm) / 100
+```
+
+**Step 3 — Explain.** Record which features matched and by how much as a human-readable string returned alongside each result.
+
+**Step 4 — Rank and return.** Sort all scored songs by `total_score` descending, slice the top-k, and return a list of `(song, score, explanation)` tuples.
+
+### Data Flow
+
+```mermaid
+flowchart TD
+    A([User Preference Dict\ngenre · mood · energy · valence · tempo_bpm]) --> B
+
+    B[load_songs\nParse songs.csv\nCast numeric fields] --> C
+
+    C[(Song Catalog\n19 songs)] --> D
+
+    D[For each song in catalog] --> E
+
+    E[score_song] --> F & G & H & I & J
+
+    F[mood_score\ncategorical match\n× 0.35]
+    G[genre_score\ncategorical match\n× 0.25]
+    H[energy_score\n1 - abs diff\n× 0.20]
+    I[valence_score\n1 - abs diff\n× 0.15]
+    J[tempo_score\n1 - abs diff / 100\n× 0.05]
+
+    F & G & H & I & J --> K
+
+    K[Weighted Sum\ntotal_score 0.0 – 1.0] --> L
+
+    L[Build explanation string\nlist top matching features] --> M
+
+    M{More songs\nto score?}
+    M -- Yes --> D
+    M -- No --> N
+
+    N[Sort all scored songs\nby total_score descending] --> O
+
+    O[Slice top-k results] --> P
+
+    P([Output\nList of top-k\nsong · score · explanation])
+```
+
+### Expected Biases and Limitations
+
+- **Genre over-penalizes adjacent styles.** Even with partial credit, a lofi fan will rarely see an ambient or jazz song crack the top results because genre carries 25% of the weight and non-lofi genres score at most 0.5. Great songs in related genres get structurally disadvantaged.
+- **Mood vocabulary mismatch.** The catalog contains 11 distinct moods but most user profiles only target 4–5 of them. Songs tagged `confident`, `nostalgic`, or `romantic` can never score above 0 on mood, regardless of how well their numerics match — they compete on only 40% of the scoring surface.
+- **New moods are invisible.** If a new song is added to the CSV with a mood not in the affinity map, it will always score 0 on mood unless the map is manually updated. The system does not generalize to unseen labels.
+- **Numeric features cannot rescue a bad categorical miss.** Even a perfect energy + valence + tempo match only contributes 0.40 to the score. A song with the wrong genre and mood is capped at 0.40 total — it can never beat a song with even one categorical match.
+- **No diversity enforcement.** The top-k results can all be from the same genre or artist if those happen to score highest. There is no mechanism to spread recommendations across styles.
+- **Static taste profile.** The system assumes the user's preferences are fixed. It has no concept of context (time of day, current session mood) or preference drift over time.
 
 ---
 
