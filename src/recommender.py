@@ -53,10 +53,7 @@ class Recommender:
 
 
 def load_songs(csv_path: str) -> List[Dict]:
-    """
-    Loads songs from a CSV file.
-    Required by src/main.py
-    """
+    """Parse a CSV file of songs and return a list of dicts with typed numeric fields."""
     songs = []
     with open(csv_path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -99,10 +96,7 @@ GENRE_AFFINITY = {
 
 
 def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
-    """
-    Scores a single song against user preferences.
-    Required by recommend_songs() and src/main.py
-    """
+    """Return a weighted similarity score and human-readable reasons for a single song."""
     reasons = []
     score = 0.0
 
@@ -153,10 +147,7 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
 def recommend_songs(
     user_prefs: Dict, songs: List[Dict], k: int = 5
 ) -> List[Tuple[Dict, float, str]]:
-    """
-    Functional implementation of the recommendation logic.
-    Required by src/main.py
-    """
+    """Score every song against user preferences and return the top-k ranked results."""
     scored = [
         (song, score, ", ".join(reasons))
         for song in songs
