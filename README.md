@@ -11,23 +11,54 @@ Your goal is to:
 - Evaluate what your system gets right and wrong
 - Reflect on how this mirrors real world AI recommenders
 
-Replace this paragraph with your own summary of what your version does.
+This simulation builds a content-based music recommender that scores songs against a user's taste profile using weighted feature similarity. It prioritizes mood and genre as the strongest signals of musical "vibe," then layers in numeric proximity scoring for energy, valence, and tempo to fine-tune rankings. Unlike real-world systems such as Spotify, which combine collaborative filtering across millions of users with deep audio analysis, this version works entirely from song attributes — no listening history, no social signals, just how well a song's character matches what a user says they want.
 
 ---
 
 ## How The System Works
 
-Explain your design in plain language.
+Real-world recommenders like Spotify blend two major approaches: collaborative filtering (finding patterns across millions of users with similar taste) and content-based filtering (matching songs to a listener based on the song's own attributes like tempo, mood, and energy). Spotify also crawls music blogs and social media to build "cultural vectors" — learning how the world describes a song, not just what it sounds like. This simulation focuses on the content-based side: it compares a user's stated preferences directly against each song's features and ranks songs by how closely they match. The system prioritizes mood and genre as hard categorical signals, then uses numeric proximity scoring for energy, valence, and tempo so that songs *closer* to a user's preference score higher — not just songs with the highest or lowest values.
 
-Some prompts to answer:
+### Song Features
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
+Each `Song` object stores:
 
-You can include a simple diagram or bullet list if helpful.
+| Feature | Type | Description |
+|---|---|---|
+| `id` | int | Unique identifier |
+| `title` | str | Song title |
+| `artist` | str | Artist name |
+| `genre` | str | Genre (pop, lofi, rock, ambient, jazz, synthwave, indie pop) |
+| `mood` | str | Mood tag (happy, chill, intense, relaxed, focused, moody) |
+| `energy` | float | Perceptual intensity, 0.0–1.0 |
+| `tempo_bpm` | int | Beats per minute |
+| `valence` | float | Musical positivity, 0.0–1.0 (high = happy, low = sad/tense) |
+| `danceability` | float | Rhythm regularity and beat strength, 0.0–1.0 |
+| `acousticness` | float | Likelihood of acoustic instruments, 0.0–1.0 |
+
+### UserProfile Features
+
+Each `UserProfile` object stores the user's preferences across the same dimensions:
+
+| Feature | Type | Description |
+|---|---|---|
+| `genre` | str | Preferred genre |
+| `mood` | str | Desired mood |
+| `energy` | float | Target energy level, 0.0–1.0 |
+| `valence` | float | Target emotional positivity, 0.0–1.0 |
+| `tempo_bpm` | int | Preferred tempo in BPM |
+
+### Scoring Logic
+
+Each song receives a weighted similarity score (0.0–1.0):
+
+- **Mood** (weight 0.35) — 1.0 for exact match, 0.5 for related moods, 0.0 otherwise
+- **Genre** (weight 0.25) — 1.0 for exact match, 0.0 otherwise
+- **Energy** (weight 0.20) — `1 - abs(song.energy - user.energy)`
+- **Valence** (weight 0.15) — `1 - abs(song.valence - user.valence)`
+- **Tempo** (weight 0.05) — `1 - abs(song.tempo_bpm - user.tempo_bpm) / 100`
+
+Songs are ranked by total score descending and the top-k are returned.
 
 ---
 
