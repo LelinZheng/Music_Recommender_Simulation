@@ -135,6 +135,12 @@ flowchart TD
 
 ---
 
+## Example Output
+
+![CLI screenshot showing top 5 recommendations with scores and reasons](example_CLI_screenshot.png)
+
+---
+
 ## Getting Started
 
 ### Setup
