@@ -1,5 +1,6 @@
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple
 from dataclasses import dataclass
+
 
 @dataclass
 class Song:
@@ -18,6 +19,7 @@ class Song:
     danceability: float
     acousticness: float
 
+
 @dataclass
 class UserProfile:
     """
@@ -28,6 +30,9 @@ class UserProfile:
     favorite_mood: str
     target_energy: float
     likes_acoustic: bool
+    target_valence: float = 0.65
+    target_tempo_bpm: int = 100
+
 
 class Recommender:
     """
@@ -45,6 +50,7 @@ class Recommender:
         # TODO: Implement explanation logic
         return "Explanation placeholder"
 
+
 def load_songs(csv_path: str) -> List[Dict]:
     """
     Loads songs from a CSV file.
@@ -53,6 +59,7 @@ def load_songs(csv_path: str) -> List[Dict]:
     # TODO: Implement CSV loading logic
     print(f"Loading songs from {csv_path}...")
     return []
+
 
 def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     """
@@ -63,7 +70,10 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     # Expected return format: (score, reasons)
     return []
 
-def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
+
+def recommend_songs(
+    user_prefs: Dict, songs: List[Dict], k: int = 5
+) -> List[Tuple[Dict, float, str]]:
     """
     Functional implementation of the recommendation logic.
     Required by src/main.py
