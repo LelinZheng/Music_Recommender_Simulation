@@ -60,6 +60,7 @@ PROFILES = {
 
 def main() -> None:
     songs = load_songs("data/songs.csv")
+    print(f"Loaded songs: {len(songs)}")
 
     # Swap the key below to try a different profile
     active_profile = PROFILES["night_study"]
